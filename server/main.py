@@ -19,7 +19,7 @@ def get_db():
         db.close()
 
 
-def save(db, req):
+def save(db, req, sms: str = None):
     origin_ip = req.client.host
     origin_port = req.client.port
     endpoint = req.url.path
@@ -30,7 +30,7 @@ def save(db, req):
         endpoint=endpoint,
         method=method,
     )
-    crud.create_request(db, request)
+    crud.create_request(db, request, sms)
     return origin_ip, origin_port, endpoint, method
 
 
@@ -60,9 +60,12 @@ async def read_messages(
 
 
 @app.post("/sms/")
-async def write_message(request: Request, db: Session = Depends(get_db)):
-    save(db, request)
-    return {"request": 1}
+async def write_message(
+    request: Request, message: schemas.RequestMessage, db: Session = Depends(get_db)
+):
+    sms = message.message
+    save(db, request, sms)
+    return {"request": sms}
 
 
 # new CONVO endpoint with id of request as path parameter

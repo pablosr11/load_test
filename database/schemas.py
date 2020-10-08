@@ -16,9 +16,14 @@ class RequestBase(BaseModel):
     method: MethodEnum
 
 
+class RequestMessage(BaseModel):
+    message: str
+
+
 class Request(RequestBase):
     id: int
     date_created: datetime
+    message: str = None
 
     class Config:
         orm_mode = True

@@ -14,3 +14,5 @@ class Requests(Base):
     endpoint = Column(String, index=True)
     method = Column(String, index=True)
     date_created = Column(DateTime(timezone=True), default=func.now())
+    message = Column(String)
+    replies_to = Column(Integer)
