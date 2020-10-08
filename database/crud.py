@@ -1,11 +1,20 @@
-from sqlalchemy.orm import Session
+from datetime import datetime
+
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from . import models, schemas
 
 
-def get_requests(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Requests).order_by(desc("id")).offset(skip).limit(limit).all()
+def get_requests(db: Session, date: datetime, skip: int = 0, limit: int = 100):
+    return (
+        db.query(models.Requests)
+        .filter(models.Requests.date_created > date)
+        .order_by(desc("id"))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_request(db: Session, request: schemas.RequestBase):
@@ -14,7 +23,6 @@ def create_request(db: Session, request: schemas.RequestBase):
         origin_port=request.origin_port,
         endpoint=request.endpoint,
         method=request.method,
-        message=request.message,
     )
     db.add(db_request)
     db.commit()

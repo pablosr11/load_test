@@ -1,6 +1,5 @@
 import requests
 
-
 q = "random query"
 URL = f"http://127.0.0.1:8000/?q={q}"
 URL2 = f"http://127.0.0.1:8000/read/"
