@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.sql.sqltypes import DateTime
 
 from .db import Base
 
@@ -12,3 +15,4 @@ class Requests(Base):
     endpoint = Column(String, index=True)
     method = Column(String, index=True)
     message = Column(String)
+    date_created = Column(DateTime(timezone=True), default=datetime.utcnow())
