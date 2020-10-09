@@ -18,3 +18,4 @@ class Requests(Base):
     message = Column(String)
     replies_to = Column(Integer, ForeignKey("requests.id"))
     replies = relationship("Requests")
+    phone = Column(String)
