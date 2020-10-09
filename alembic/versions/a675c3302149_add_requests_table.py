@@ -1,8 +1,8 @@
-"""Create Request table
+"""Add requests table
 
-Revision ID: f3df2cbba1a5
+Revision ID: a675c3302149
 Revises: 
-Create Date: 2020-10-08 09:10:51.753813
+Create Date: 2020-10-08 17:15:55.980266
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f3df2cbba1a5'
+revision = 'a675c3302149'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,6 +25,9 @@ def upgrade():
     sa.Column('endpoint', sa.String(), nullable=True),
     sa.Column('method', sa.String(), nullable=True),
     sa.Column('date_created', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('message', sa.String(), nullable=True),
+    sa.Column('replies_to', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['replies_to'], ['requests.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_requests_endpoint'), 'requests', ['endpoint'], unique=False)

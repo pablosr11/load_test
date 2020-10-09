@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.sql.sqltypes import DateTime
 
@@ -15,4 +16,5 @@ class Requests(Base):
     method = Column(String, index=True)
     date_created = Column(DateTime(timezone=True), default=func.now())
     message = Column(String)
-    replies_to = Column(Integer)
+    replies_to = Column(Integer, ForeignKey("requests.id"))
+    replies = relationship("Requests")
