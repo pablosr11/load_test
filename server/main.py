@@ -3,7 +3,15 @@ from typing import List
 
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+)
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
@@ -59,20 +67,21 @@ def store_reply(
 
 
 @app.get("/")
-async def read_root(request: Request, db: Session = Depends(get_db)):
-    built_request = store_request(db, request)
-    return {
-        "Hello": {
-            "From": f"{built_request.origin_ip}:{built_request.origin_port}",
-            "Endpoint used": built_request.endpoint,
-            "Method": built_request.method,
-        }
-    }
+async def read_root(
+    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
+    background_tasks.add_task(store_request, db, request)
+    return {"Hello": "This is welcome page"}
 
 
 @app.get("/sms/{sms_id}", response_model=schemas.RequestWithReplies)
-async def read_replies(request: Request, sms_id: int, db: Session = Depends(get_db)):
-    store_request(db=db, req=request)
+async def read_replies(
+    request: Request,
+    sms_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    background_tasks.add_task(store_request, db, request)
     original = crud.get_request(db=db, sms_id=sms_id)
     return original
 
@@ -80,13 +89,14 @@ async def read_replies(request: Request, sms_id: int, db: Session = Depends(get_
 @app.get("/sms/", response_model=List[schemas.Request])
 async def read_messages(
     request: Request,
+    background_tasks: BackgroundTasks,
     date: datetime = "",
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
 ) -> List[schemas.Request]:
+    background_tasks.add_task(store_request, db, request)
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
-    store_request(db=db, req=request)
     return requests
 
 
