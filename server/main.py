@@ -3,8 +3,9 @@ from typing import List
 
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response
 from sqlalchemy.orm import Session
+from twilio.twiml.messaging_response import MessagingResponse
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -19,42 +20,61 @@ def get_db():
         db.close()
 
 
-def save(db, req, sms: str = None):
-    origin_ip = req.client.host
-    origin_port = req.client.port
-    endpoint = req.url.path
-    method = req.method
-    request = schemas.RequestBase(
+def generate_message(request: Request) -> schemas.RequestBase:
+    origin_ip = request.client.host
+    origin_port = request.client.port
+    endpoint = request.url.path
+    method = request.method
+    built_request = schemas.RequestBase(
         origin_ip=origin_ip,
         origin_port=origin_port,
         endpoint=endpoint,
         method=method,
     )
-    crud.create_request(db, request, sms)
-    return origin_ip, origin_port, endpoint, method
+    return built_request
+
+
+def store_request(db: SessionLocal, req: Request) -> schemas.RequestBase:
+    built_request = generate_message(req)
+    crud.create_request(db, built_request)
+    return built_request
+
+
+def store_request_with_message(
+    db: SessionLocal, req: Request, text: str
+) -> schemas.Request:
+    built_request = generate_message(req)
+    request_with_sms = crud.create_request(db=db, request=built_request, sms=text)
+    return request_with_sms
+
+
+def store_reply(
+    db: SessionLocal, req: Request, text: str, og_message: models.Requests
+) -> schemas.Request:
+    built_request = generate_message(req)
+    request_with_sms = crud.create_reply(
+        db=db, original_sms=og_message, request=built_request, request_sms=text
+    )
+    return request_with_sms
 
 
 @app.get("/")
 async def read_root(request: Request, db: Session = Depends(get_db)):
-    origin_ip, origin_port, endpoint, method = save(db, request)
+    built_request = store_request(db, request)
     return {
         "Hello": {
-            "From": f"{origin_ip}:{origin_port}",
-            "Endpoint used": endpoint,
-            "Method": method,
+            "From": f"{built_request.origin_ip}:{built_request.origin_port}",
+            "Endpoint used": built_request.endpoint,
+            "Method": built_request.method,
         }
     }
 
 
-@app.get("/sms/{sms_id}")
-async def read_replies(sms_id: int, db: Session = Depends(get_db)):
-    ### query db for all replies to this message
-    replies = crud.get_replies(db, sms_id)
-    ### query the message
-    original = crud.get_request(db, sms_id)
-
-    ### return the message and its replies
-    return {"message": original, "replies": replies}
+@app.get("/sms/{sms_id}", response_model=schemas.RequestWithReplies)
+async def read_replies(request: Request, sms_id: int, db: Session = Depends(get_db)):
+    store_request(db=db, req=request)
+    original = crud.get_request(db=db, sms_id=sms_id)
+    return original
 
 
 @app.get("/sms/", response_model=List[schemas.Request])
@@ -64,46 +84,63 @@ async def read_messages(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-):
-    save(db, request)
+) -> List[schemas.Request]:
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
+    store_request(db=db, req=request)
     return requests
 
 
-@app.post("/sms/{sms_id}")
+@app.post(
+    "/sms/{sms_id}",
+    response_model=schemas.RequestMessageOut,
+    response_model_exclude_none=True,
+)
 async def write_reploy(
     sms_id: int,
     request: Request,
-    message: schemas.RequestMessage,
+    message: schemas.RequestMessageIn,
     db: Session = Depends(get_db),
 ):
-    ### query db to get the sms_id
-    sms = crud.get_request(db, sms_id)
 
-    ### if not found, return 404
-    if not sms:
-        raise HTTPException(status_code=404, detail="Item not found")
+    original_sms = crud.get_request(db, sms_id)
 
-    ### if found, store request in db with message and its reply_to
-    origin_ip = request.client.host
-    origin_port = request.client.port
-    endpoint = request.url.path
-    method = request.method
-    request = schemas.RequestBase(
-        origin_ip=origin_ip,
-        origin_port=origin_port,
-        endpoint=endpoint,
-        method=method,
-    )
+    if not original_sms:
+        raise HTTPException(status_code=404, detail="Message not found")
+
     reply = message.message
-    new_sms = crud.create_reply(db, sms, request, reply)
+    new_sms = store_reply(db=db, req=request, text=reply, og_message=original_sms)
     return new_sms
 
 
-@app.post("/sms/")
+@app.post(
+    "/sms/", response_model=schemas.RequestMessageOut, response_model_exclude_none=True
+)
 async def write_message(
-    request: Request, message: schemas.RequestMessage, db: Session = Depends(get_db)
+    request: Request, message: schemas.RequestMessageIn, db: Session = Depends(get_db)
 ):
     sms = message.message
-    save(db, request, sms)
-    return {"request": sms}
+    built_request = store_request_with_message(db=db, req=request, text=sms)
+    return built_request
+
+
+@app.get("/twilio/")
+@app.post("/twilio/")
+async def twilio_write(
+    request: Request,
+    From: str = Form(...),
+    Body: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    phone_request = generate_message(request)
+    crud.create_request_from_phone(
+        db=db, phone_number=From, phone_message=Body, request=phone_request
+    )
+
+    # Twilio integration. Respond to messages
+    # Some sec could be added here by checking the headers for a twilio signature against the origin url for a given account
+    # more info on https://www.twilio.com/blog/build-secure-twilio-webhook-python-fastapi
+    response = MessagingResponse()
+    response.message(
+        f"Welcome to Pablo's Avocados - We have confirmed your appointment. We will contact you at {From}. The words you used, namely '{Body}', don't have any creativity or rythm whatsoever but have a good day nonetheless"
+    )
+    return Response(content=str(response), media_type="application/xml")
