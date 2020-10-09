@@ -14,7 +14,7 @@ class QuickstartUser(HttpUser):
     @task
     def view_messages_with_replies(self):
         # generate random number 1-500
-        rnd = int(150 * random())
+        rnd = int(20000 * random())
         self.client.get(f"/sms/{rnd}", name="/detail-sms")
 
     @task
@@ -22,15 +22,23 @@ class QuickstartUser(HttpUser):
         self.client.get("/sms/")
 
     @task
+    def view_all_messages_limited_10(self):
+        self.client.get("/sms/?limit=10")
+
+    @task
+    def view_all_messages_limited_500(self):
+        self.client.get("/sms/?limit=500")
+
+    @task
     def write_message(self):
         # generate random string
-        payload = "".join([choice(ascii_lowercase) for _ in range(5)])
+        payload = "".join([choice(ascii_lowercase) for _ in range(8)])
         self.client.post("/sms/", json={"message": payload})
 
     @task
     def write_reply(self):
         # generate random number 1-500
-        rnd = int(150 * random())
+        rnd = int(20000 * random())
 
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(5)])
