@@ -3,7 +3,7 @@ from typing import List
 
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
@@ -46,6 +46,17 @@ async def read_root(request: Request, db: Session = Depends(get_db)):
     }
 
 
+@app.get("/sms/{sms_id}")
+async def read_replies(sms_id: int, db: Session = Depends(get_db)):
+    ### query db for all replies to this message
+    replies = crud.get_replies(db, sms_id)
+    ### query the message
+    original = crud.get_request(db, sms_id)
+
+    ### return the message and its replies
+    return {"message": original, "replies": replies}
+
+
 @app.get("/sms/", response_model=List[schemas.Request])
 async def read_messages(
     request: Request,
@@ -59,6 +70,36 @@ async def read_messages(
     return requests
 
 
+@app.post("/sms/{sms_id}")
+async def write_reploy(
+    sms_id: int,
+    request: Request,
+    message: schemas.RequestMessage,
+    db: Session = Depends(get_db),
+):
+    ### query db to get the sms_id
+    sms = crud.get_request(db, sms_id)
+
+    ### if not found, return 404
+    if not sms:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    ### if found, store request in db with message and its reply_to
+    origin_ip = request.client.host
+    origin_port = request.client.port
+    endpoint = request.url.path
+    method = request.method
+    request = schemas.RequestBase(
+        origin_ip=origin_ip,
+        origin_port=origin_port,
+        endpoint=endpoint,
+        method=method,
+    )
+    reply = message.message
+    new_sms = crud.create_reply(db, sms, request, reply)
+    return new_sms
+
+
 @app.post("/sms/")
 async def write_message(
     request: Request, message: schemas.RequestMessage, db: Session = Depends(get_db)
@@ -66,8 +107,3 @@ async def write_message(
     sms = message.message
     save(db, request, sms)
     return {"request": sms}
-
-
-# new CONVO endpoint with id of request as path parameter
-# POST sends a response
-# GET gets message and all its replies
