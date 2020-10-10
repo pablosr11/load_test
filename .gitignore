@@ -1,5 +1,6 @@
 sql_app.db
 **venv**
+**.env
 **.vscode**
 **__pycache__**
 **.pytest_cache**
