@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import List
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
@@ -90,7 +90,7 @@ async def read_replies(
 async def read_messages(
     request: Request,
     background_tasks: BackgroundTasks,
-    date: datetime = "",
+    date: Optional[datetime] = datetime.now() - timedelta(30),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),

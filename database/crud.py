@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy import desc
@@ -12,7 +12,10 @@ def get_request(db: Session, sms_id: int) -> Optional[models.Requests]:
 
 
 def get_requests(
-    db: Session, date: datetime, skip: int = 0, limit: int = 100
+    db: Session,
+    date: datetime = datetime.now() - timedelta(30),
+    skip: int = 0,
+    limit: int = 100,
 ) -> List[models.Requests]:
     return (
         db.query(models.Requests)
