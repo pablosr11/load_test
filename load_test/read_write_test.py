@@ -14,7 +14,7 @@ class QuickstartUser(HttpUser):
     @task
     def view_messages_with_replies(self):
         # generate random number 1-500
-        rnd = int(20000 * random())
+        rnd = int(500 * random()) + 1
         self.client.get(f"/sms/{rnd}", name="/detail-sms")
 
     @task
@@ -38,7 +38,7 @@ class QuickstartUser(HttpUser):
     @task
     def write_reply(self):
         # generate random number 1-500
-        rnd = int(20000 * random())
+        rnd = int(500 * random()) + 1
 
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(5)])
