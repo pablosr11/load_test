@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 
+const BASE_URL = "http://localhost:8000";
+const SMS_ENDPOINT = BASE_URL + "/sms/";
 class AddMessageForm extends React.Component {
   constructor(props) {
     super(props);
@@ -25,7 +27,7 @@ class AddMessageForm extends React.Component {
 
   async handleSubmit(event) {
     event.preventDefault(); //this needs to be first line so we dont refresh on post
-    let url = "http://127.0.0.1:8000/sms/".concat(this.state.reply_to);
+    let url = SMS_ENDPOINT + this.state.reply_to;
     await fetch(url, {
       method: "POST",
       headers: {
@@ -79,27 +81,13 @@ function MessageList(props) {
 }
 
 function Replies(props) {
-  // let listMsg = props.display_replies.replies.map((msg) => (
-  //   <li key={msg.id}>
-  //     Replies to message {msg.id} - {msg.message}: {msg.replies}
-  //   </li>
-  // ));
-  // let reply_id = "";
-  // if (props.display_replies.id) {
-  //   let replies = props.display_replies.replies;
-  //   let reply_id = props.display_replies.id;
-  //   let msg = props.display_replies.message;
-  //   console.log(reply_id, msg, replies);
-  // } else {
-  //   console.log("NO NO");
-  // }
   return (
     <div>
       <h1>Replies to message {props.display_replies.id}</h1>
       <p>OG msg: {props.display_replies.message}</p>
       <ul>
         {props.display_replies.replies.map((reply) => (
-          <li>{reply.message}</li>
+          <li key={reply.id}>{reply.message}</li>
         ))}
       </ul>
     </div>
@@ -126,7 +114,7 @@ class Messages extends React.Component {
 
   // we have no response validation (on error, we just dont do anything)
   async get_replies(reply_id) {
-    let url = "http://127.0.0.1:8000/sms/" + reply_id;
+    let url = SMS_ENDPOINT + reply_id;
     const response = await fetch(url);
     const msgs = await response.json();
     if (msgs) {
@@ -139,7 +127,7 @@ class Messages extends React.Component {
       // validate is an int
       this.get_replies(o);
     }
-    const url = "http://127.0.0.1:8000/sms/?limit=30";
+    const url = SMS_ENDPOINT;
     const response = await fetch(url);
     const msgs = await response.json();
     this.setState({ messages: msgs });
