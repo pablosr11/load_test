@@ -5,3 +5,4 @@ sql_app.db
 **__pycache__**
 **.pytest_cache**
 README.md
+**node_modules**
