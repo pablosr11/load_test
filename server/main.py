@@ -3,15 +3,8 @@ from typing import List, Optional
 
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
-from fastapi import (
-    BackgroundTasks,
-    Depends,
-    FastAPI,
-    Form,
-    HTTPException,
-    Request,
-    Response,
-)
+from fastapi import (BackgroundTasks, Depends, FastAPI, Form, HTTPException,
+                     Request, Response)
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
@@ -20,7 +13,10 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost:3000",
+    "http://192.168.0.2:3000",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -84,6 +80,7 @@ async def read_root(
     return {"Hello": "This is welcome page"}
 
 
+## to use these endpoints, webhooks have to be added to twilio backend.
 @app.get("/sms/{sms_id}", response_model=schemas.RequestWithReplies)
 async def read_replies(
     request: Request,
