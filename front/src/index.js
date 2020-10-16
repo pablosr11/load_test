@@ -70,7 +70,7 @@ function MessageList(props) {
   const msgs = props.display_msg;
   let listMsg = msgs.map((msg) => (
     <li key={msg.id}>
-      ID: {msg.id} We try a {msg.method} to {msg.endpoint} with text
+      ID: {msg.id} We try a {msg.method} to {msg.endpoint} with text{" "}
       {msg.message}
     </li>
   ));
