@@ -1,5 +1,5 @@
 ---
-- hosts: prod
+- hosts: backend
   remote_user: ubuntu
   vars:
     docker_apt_packages: ["docker-ce", "docker-ce-cli", "containerd.io"]
@@ -64,10 +64,17 @@
     ###
     ### APP DEPLOYMENT
     ###
-    - name: Deploy Nginx
+    - name: Deploy backend
       become: yes
       docker_container:
         name: web
-        image: nginx
+        image: pablosr11/loadtest-backend
         ports:
-          - "80:80"
+          - "8000:8000"
+        env:
+          SECRET_KEY: ssssh
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 
+          POSTGRES_SERVER: 
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: loadtest
