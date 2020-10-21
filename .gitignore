@@ -6,3 +6,4 @@ sql_app.db
 **.pytest_cache**
 README.md
 **node_modules**
+**tf-key**

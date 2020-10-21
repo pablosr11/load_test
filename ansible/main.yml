@@ -1,0 +1,73 @@
+---
+- hosts: prod
+  remote_user: ubuntu
+  vars:
+    docker_apt_packages: ["docker-ce", "docker-ce-cli", "containerd.io"]
+    docker_apt_dependecies:
+      [
+        "apt-transport-https",
+        "curl",
+        "ca-certificates",
+        "gnupg-agent",
+        "software-properties-common",
+        "python3-pip",
+      ]
+    docker_apt_key_url: https://download.docker.com/linux/ubuntu/gpg
+    ubuntu_release: "focal" # output of $(lsb_release -cs)
+
+  tasks:
+    ###
+    ### UPDATE APT PACKAGES
+    ###
+    - name: Update index and Upgrade all packages to the latest version
+      become: yes
+      apt:
+        upgrade: full
+        state: present
+        update_cache: yes
+
+    ###
+    ### INSTALL DOCKER PACKAGES + DOCKER ENGINE
+    ###
+    - name: Instal docker dependencies
+      become: yes
+      apt:
+        name: "{{ docker_apt_dependecies }}"
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG apt Key
+      become: yes
+      apt_key:
+        url: "{{ docker_apt_key_url}}"
+        state: present
+
+    - name: Add Docker apt Repository and Update index
+      become: yes
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu {{ ubuntu_release }} stable
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Engine packages
+      become: yes
+      apt:
+        name: "{{ docker_apt_packages }}"
+        state: present
+
+    - name: Install Docker Module for Python
+      become: yes # so docker container has acces to python3
+      pip:
+        name: docker
+        state: present
+
+    ###
+    ### APP DEPLOYMENT
+    ###
+    - name: Deploy Nginx
+      become: yes
+      docker_container:
+        name: web
+        image: nginx
+        ports:
+          - "80:80"
