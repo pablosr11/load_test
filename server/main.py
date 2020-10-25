@@ -17,6 +17,7 @@ origins = [
     "http://localhost:3000",
     "http://192.168.0.2:3000",
     "http://localhost",
+    "*" # to be modified for added security once we have static urls/other way of adding known origins
 ]
 app.add_middleware(
     CORSMiddleware,

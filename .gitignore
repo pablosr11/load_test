@@ -7,3 +7,4 @@ sql_app.db
 README.md
 **node_modules**
 **tf-key**
+**.tfstate**

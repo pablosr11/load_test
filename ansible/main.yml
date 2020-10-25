@@ -1,5 +1,7 @@
 ---
-- hosts: backend
+- name: Setup servers
+  gather_facts: no
+  hosts: prod
   remote_user: ubuntu
   vars:
     docker_apt_packages: ["docker-ce", "docker-ce-cli", "containerd.io"]
@@ -39,7 +41,7 @@
     - name: Add Docker GPG apt Key
       become: yes
       apt_key:
-        url: "{{ docker_apt_key_url}}"
+        url: "{{ docker_apt_key_url }}"
         state: present
 
     - name: Add Docker apt Repository and Update index
@@ -61,6 +63,27 @@
         name: docker
         state: present
 
+- name: BACKEND DEPLOYMENT
+  gather_facts: no
+  hosts: backend
+  remote_user: ubuntu
+  tasks:
+    ### Check required variables
+    - name: Check required variables are defined correctly
+      assert:
+        that:
+          - vars[item] is defined and vars[item] != ""
+        quiet: yes
+      with_items:
+        - db_server
+        - db_name
+        - db_user
+        - db_pass
+        - db_port
+        - backend_image
+        - backend_tag
+        - backend_exposed_port
+
     ###
     ### APP DEPLOYMENT
     ###
@@ -68,13 +91,44 @@
       become: yes
       docker_container:
         name: web
-        image: pablosr11/loadtest-backend
+        container_default_behavior: compatibility
+        pull: yes # to pick up new image
+        image: "{{ backend_image }}:{{ backend_tag }}"
         ports:
-          - "8000:8000"
+          - "{{ backend_exposed_port }}"
         env:
-          SECRET_KEY: ssssh
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: 
-          POSTGRES_SERVER: 
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: loadtest
+          POSTGRES_USER: "{{ db_user }}"
+          POSTGRES_PASSWORD: "{{ db_pass }}"
+          POSTGRES_SERVER: "{{ db_server }}"
+          POSTGRES_PORT: "{{ db_port }}"
+          POSTGRES_DB: "{{ db_name }}"
+
+- name: FRONTEND DEPLOYMENT
+  gather_facts: no
+  hosts: frontend
+  remote_user: ubuntu
+
+  tasks:
+    ### Check required variables
+    - name: Check required variables are defined correctly
+      assert:
+        that:
+          - vars[item] is defined and vars[item] != ""
+        quiet: yes
+      with_items:   
+        - frontend_image
+        - frontend_tag
+        - frontend_exposed_port
+
+    ###
+    ### APP DEPLOYMENT
+    ###
+    - name: Deploy frontend
+      become: yes
+      docker_container:
+        name: front
+        container_default_behavior: compatibility
+        pull: yes # to pick up new image
+        image: "{{ frontend_image }}:{{ frontend_tag }}"
+        ports:
+          - "{{ frontend_exposed_port }}"

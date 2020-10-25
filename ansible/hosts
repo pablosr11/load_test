@@ -1,10 +1,29 @@
-[prod]
-18.133.220.135
-3.9.174.42
 
 [backend]
-18.133.220.135
+35.176.18.102
 
-[backend:vars]
+[frontend]
+18.132.195.219
+
+[prod:children]
+backend
+frontend
+
+[prod:vars]
 ansible_python_interpreter=/usr/bin/python3
 ansible_ssh_private_key_file=/Users/pablo.sanderson/repos/z-pablo/backend_load/tf-key
+
+[backend:vars]
+db_server="db-test.crzpxav9jfak.eu-west-2.rds.amazonaws.com"
+db_name="loadtest"
+db_user="postgres"
+db_pass=""
+db_port="5432"
+backend_image="pablosr11/loadtest-backend"
+backend_tag="latest"
+backend_exposed_port="8000:8000"
+
+[frontend:vars]
+frontend_image="pablosr11/loadtest-frontend"
+frontend_exposed_port="80:80"
+frontend_tag="latest"

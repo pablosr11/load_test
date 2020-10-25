@@ -29,13 +29,13 @@ class QuickstartUser(HttpUser):
     def view_all_messages_limited_500(self):
         self.client.get("/sms/?limit=500")
 
-    @task
+    @task(2)
     def write_message(self):
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(8)])
         self.client.post("/sms/", json={"message": payload})
 
-    @task
+    @task(2)
     def write_reply(self):
         # generate random number 1-500
         rnd = int(500 * random()) + 1
