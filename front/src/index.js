@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 
+// to run locally, prefix api with process.env.REACT_APP_DOMAIN
 const API_PATH = "/api";
 const SMS_ENDPOINT = API_PATH + "/sms/";
 
