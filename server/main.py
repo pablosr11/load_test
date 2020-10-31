@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from database import crud, models, schemas
-from database.db import SessionLocal, engine
 from fastapi import (BackgroundTasks, Depends, FastAPI, Form, HTTPException,
                      Request, Response)
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
+
+from database import crud, models, schemas
+from database.db import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -74,7 +75,7 @@ def store_reply(
     return request_with_sms
 
 
-@app.get("/")
+@app.get("/api")
 async def read_root(
     request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
 ):
@@ -83,7 +84,7 @@ async def read_root(
 
 
 ## to use these endpoints, webhooks have to be added to twilio backend.
-@app.get("/sms/{sms_id}", response_model=schemas.RequestWithReplies)
+@app.get("/api/sms/{sms_id}", response_model=schemas.RequestWithReplies)
 async def read_replies(
     request: Request,
     sms_id: int,
@@ -95,7 +96,7 @@ async def read_replies(
     return original
 
 
-@app.get("/sms/", response_model=List[schemas.Request])
+@app.get("/api/sms/", response_model=List[schemas.Request])
 async def read_messages(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -110,7 +111,7 @@ async def read_messages(
 
 
 @app.post(
-    "/sms/{sms_id}",
+    "/api/sms/{sms_id}",
     response_model=schemas.RequestMessageOut,
     response_model_exclude_none=True,
 )
@@ -132,7 +133,7 @@ async def write_reploy(
 
 
 @app.post(
-    "/sms/", response_model=schemas.RequestMessageOut, response_model_exclude_none=True
+    "/api/sms/", response_model=schemas.RequestMessageOut, response_model_exclude_none=True
 )
 async def write_message(
     request: Request, message: schemas.RequestMessageIn, db: Session = Depends(get_db)

@@ -1,10 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
-require("dotenv").config();
 
-const BASE_URL = process.env.REACT_APP_DOMAIN;
-const SMS_ENDPOINT = BASE_URL + "/sms/";
+const API_PATH = "/api";
+const SMS_ENDPOINT = API_PATH + "/sms/";
 
 class AddMessageForm extends React.Component {
   constructor(props) {
