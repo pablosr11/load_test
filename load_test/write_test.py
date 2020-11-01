@@ -11,7 +11,7 @@ class QuickstartUser(HttpUser):
     def write_message(self):
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(5)])
-        self.client.post("/sms/", json={"message": payload})
+        self.client.post("/api/sms/", json={"message": payload})
 
     @task
     def write_reply(self):
@@ -21,4 +21,4 @@ class QuickstartUser(HttpUser):
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(5)])
 
-        self.client.post(f"/sms/{rnd}", json={"message": payload}, name="/detail-sms")
+        self.client.post(f"/api/sms/{rnd}", json={"message": payload}, name="/detail-sms")

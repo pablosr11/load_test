@@ -1,8 +1,15 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import (BackgroundTasks, Depends, FastAPI, Form, HTTPException,
-                     Request, Response)
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
@@ -18,7 +25,7 @@ origins = [
     "http://localhost:3000",
     "http://192.168.0.2:3000",
     "http://localhost",
-    "*" # to be modified for added security once we have static urls/other way of adding known origins
+    "*",  # to be modified for added security once we have static urls/other way of adding known origins
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -83,7 +90,6 @@ async def read_root(
     return {"Hello": "This is welcome page"}
 
 
-## to use these endpoints, webhooks have to be added to twilio backend.
 @app.get("/api/sms/{sms_id}", response_model=schemas.RequestWithReplies)
 async def read_replies(
     request: Request,
@@ -133,7 +139,9 @@ async def write_reploy(
 
 
 @app.post(
-    "/api/sms/", response_model=schemas.RequestMessageOut, response_model_exclude_none=True
+    "/api/sms/",
+    response_model=schemas.RequestMessageOut,
+    response_model_exclude_none=True,
 )
 async def write_message(
     request: Request, message: schemas.RequestMessageIn, db: Session = Depends(get_db)
@@ -143,6 +151,7 @@ async def write_message(
     return built_request
 
 
+## to use these endpoints, webhooks have to be added to twilio backend.
 @app.get("/twilio/")
 @app.post("/twilio/")
 async def twilio_write(
