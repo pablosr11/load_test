@@ -86,7 +86,9 @@ def store_reply(
 async def read_root(
     request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
 ):
-    background_tasks.add_task(store_request, db, request)
+    ## fastapi.backgrounds tasks might be too slow? Or maybe we need to increase open connections with DB.
+    # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) FATAL:  sorry, too many clients already
+    # background_tasks.add_task(store_request, db, request)
     return {"Hello": "This is welcome page"}
 
 
@@ -97,7 +99,7 @@ async def read_replies(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    background_tasks.add_task(store_request, db, request)
+    # background_tasks.add_task(store_request, db, request)
     original = crud.get_request(db=db, sms_id=sms_id)
     return original
 
@@ -111,7 +113,7 @@ async def read_messages(
     limit: int = 100,
     db: Session = Depends(get_db),
 ) -> List[schemas.Request]:
-    background_tasks.add_task(store_request, db, request)
+    # background_tasks.add_task(store_request, db, request)
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
     return requests
 
