@@ -28,9 +28,9 @@ else:
     web_concurrency = max(int(default_web_concurrency), 2)
     if use_max_workers:
         web_concurrency = min(web_concurrency, use_max_workers)
-accesslog_var = os.getenv("ACCESS_LOG", "-")
+accesslog_var = os.getenv("ACCESS_LOG", "access.log")
 use_accesslog = accesslog_var or None
-errorlog_var = os.getenv("ERROR_LOG", "-")
+errorlog_var = os.getenv("ERROR_LOG", "error.log")
 use_errorlog = errorlog_var or None
 graceful_timeout_str = os.getenv("GRACEFUL_TIMEOUT", "120")
 timeout_str = os.getenv("TIMEOUT", "120")
@@ -58,10 +58,11 @@ log_data = {
     "keepalive": keepalive,
     "errorlog": errorlog,
     "accesslog": accesslog,
+    "cores": cores,
     # Additional, non-gunicorn variables
     "workers_per_core": workers_per_core,
     "use_max_workers": use_max_workers,
     "host": host,
     "port": port,
 }
-# print(json.dumps(log_data))
+print(json.dumps(log_data))
