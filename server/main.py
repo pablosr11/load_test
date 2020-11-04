@@ -83,9 +83,7 @@ def store_reply(
 
 
 @app.get("/api")
-async def read_root(
-    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
-):
+async def read_root():
     ## fastapi.backgrounds tasks might be too slow? Or maybe we need to increase open connections with DB.
     # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) FATAL:  sorry, too many clients already
     # background_tasks.add_task(store_request, db, request)

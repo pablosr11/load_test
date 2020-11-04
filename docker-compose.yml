@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: db
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=loadtest
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - loadtest_db:/var/lib/postgresql/data
+
+  backend:
+    container_name: backend
+    image: ole # pablosr11/loadtest-backend:k8
+    build: ./server
+    command:
+      ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]
+    ports:
+      - 8000:8000
+    volumes:
+      - type: bind
+        source: ./server
+        target: /app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=loadtest
+    depends_on:
+      - db
+      - redis
+
+  front:
+    container_name: front
+    image: pablosr11/loadtest-frontend:k8
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+
+  redis:
+    container_name: redis
+    image: redis:6.0
+
+volumes:
+  loadtest_db:
