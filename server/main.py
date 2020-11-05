@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Dict, List, NoReturn, Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -14,17 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
-from database import crud, models, schemas
-from database.db import SessionLocal, engine
+from server.caches.redis_client import redis_cache
+from server.database import crud, models, schemas
+from server.database.db import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
-    "http://192.168.0.2:3000",
-    "http://localhost",
     "*",  # to be modified for added security once we have static urls/other way of adding known origins
 ]
 app.add_middleware(
@@ -45,47 +43,39 @@ def get_db():
 
 
 def generate_message(request: Request) -> schemas.RequestBase:
-    origin_ip = request.client.host
-    origin_port = request.client.port
-    endpoint = request.url.path
-    method = request.method
     built_request = schemas.RequestBase(
-        origin_ip=origin_ip,
-        origin_port=origin_port,
-        endpoint=endpoint,
-        method=method,
+        origin_ip=request.client.host,
+        origin_port=request.client.port,
+        endpoint=request.url.path,
+        method=request.method,
     )
     return built_request
 
 
-def store_request(db: SessionLocal, req: Request) -> schemas.RequestBase:
-    built_request = generate_message(req)
-    crud.create_request(db, built_request)
-    return built_request
+def store_request(db: SessionLocal, req: Request) -> NoReturn:
+    crud.create_request(db, generate_message(req))
 
 
 def store_request_with_message(
     db: SessionLocal, req: Request, text: str
-) -> schemas.Request:
+) -> schemas.RequestMessageOut:
     built_request = generate_message(req)
     request_with_sms = crud.create_request(db=db, request=built_request, sms=text)
-    return request_with_sms
+    return schemas.RequestMessageOut(**request_with_sms.__dict__)
 
 
 def store_reply(
     db: SessionLocal, req: Request, text: str, og_message: models.Requests
-) -> schemas.Request:
+) -> schemas.RequestMessageOut:
     built_request = generate_message(req)
     request_with_sms = crud.create_reply(
         db=db, original_sms=og_message, request=built_request, request_sms=text
     )
-    return request_with_sms
+    return schemas.RequestMessageOut(**request_with_sms.__dict__)
 
 
-@app.get("/api")
+@app.get("/api", response_model=Dict)
 async def read_root():
-    ## fastapi.backgrounds tasks might be too slow? Or maybe we need to increase open connections with DB.
-    # sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) FATAL:  sorry, too many clients already
     # background_tasks.add_task(store_request, db, request)
     return {"Hello": "This is welcome page"}
 
@@ -98,8 +88,7 @@ async def read_replies(
     db: Session = Depends(get_db),
 ):
     # background_tasks.add_task(store_request, db, request)
-    original = crud.get_request(db=db, sms_id=sms_id)
-    return original
+    return crud.get_request(db=db, sms_id=sms_id)
 
 
 @app.get("/api/sms/", response_model=List[schemas.Request])
@@ -127,7 +116,6 @@ async def write_reploy(
     message: schemas.RequestMessageIn,
     db: Session = Depends(get_db),
 ):
-
     original_sms = crud.get_request(db, sms_id)
 
     if not original_sms:
