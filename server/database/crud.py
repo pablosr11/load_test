@@ -7,6 +7,13 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 
+def add_commit_refresh(db, request):
+    db.add(request)
+    db.commit()
+    db.refresh(request)
+    return request
+
+
 def get_request(db: Session, sms_id: int) -> Optional[models.Requests]:
     return db.query(models.Requests).get(sms_id)
 
@@ -38,48 +45,25 @@ def create_reply(
     request_sms: str = None,
 ) -> models.Requests:
     db_request = models.Requests(
-        origin_ip=request.origin_ip,
-        origin_port=request.origin_port,
-        endpoint=request.endpoint,
-        method=request.method,
-        message=request_sms,
-        replies_to=original_sms.id,
+        message=request_sms, replies_to=original_sms.id, **request.dict()
     )
-    db.add(db_request)
-    db.commit()
-    db.refresh(db_request)
-    return db_request
+    return add_commit_refresh(db=db, request=db_request)
 
 
 def create_request(
     db: Session, request: schemas.RequestBase, sms: str = None
 ) -> models.Requests:
     db_request = models.Requests(
-        origin_ip=request.origin_ip,
-        origin_port=request.origin_port,
-        endpoint=request.endpoint,
-        method=request.method,
         message=sms,
+        **request.dict(),
     )
-    db.add(db_request)
-    db.commit()
-    db.refresh(db_request)
-    return db_request
+    return add_commit_refresh(db=db, request=db_request)
 
 
 def create_request_from_phone(
     db: Session, phone_number: str, phone_message: str, request: schemas.RequestBase
 ):
-    print(db, phone_message, phone_number, request)
     db_request = models.Requests(
-        origin_ip=request.origin_ip,
-        origin_port=request.origin_port,
-        endpoint=request.endpoint,
-        method=request.method,
-        message=phone_message,
-        phone=phone_number,
+        message=phone_message, phone=phone_number, **request.dict()
     )
-    db.add(db_request)
-    db.commit()
-    db.refresh(db_request)
-    return db_request
+    return add_commit_refresh(db=db, request=db_request)
