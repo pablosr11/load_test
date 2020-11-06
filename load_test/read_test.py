@@ -14,7 +14,7 @@ class QuickstartUser(HttpUser):
     @task
     def view_messages_with_replies(self):
         # generate random number 1-500
-        rnd = int(150 * random())
+        rnd = int(150 * random()) +1
         self.client.get(f"/api/sms/{rnd}", name="/detail-sms")
     
     @task
