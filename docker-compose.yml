@@ -13,22 +13,16 @@ services:
 
   backend:
     container_name: backend
-    image: ole # pablosr11/loadtest-backend:k8
-    build: ./server
-    command:
-      ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]
+    image: pablosr11/loadtest-backend:k8
     ports:
       - 8000:8000
-    volumes:
-      - type: bind
-        source: ./server
-        target: /app
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_SERVER=db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=loadtest
+      - REDIS_HOST=redis
     depends_on:
       - db
       - redis
