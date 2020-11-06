@@ -91,7 +91,11 @@ async def read_replies(
     return crud.get_request(db=db, sms_id=sms_id)
 
 
-@app.get("/api/sms/", response_model=List[schemas.Request])
+@app.get(
+    "/api/sms/",
+    response_model=List[schemas.RequestMessageOut],
+    response_model_exclude_none=True,
+)
 async def read_messages(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -101,6 +105,11 @@ async def read_messages(
     db: Session = Depends(get_db),
 ) -> List[schemas.Request]:
     # background_tasks.add_task(store_request, db, request)
+    if redis_cache.exists("all"):
+        return [
+            schemas.RequestMessageOut.parse_raw(x)
+            for x in redis_cache.lrange("all", skip, skip + limit)
+        ]
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
     return requests
 
@@ -123,6 +132,7 @@ async def write_reploy(
 
     reply = message.message
     new_sms = store_reply(db=db, req=request, text=reply, og_message=original_sms)
+    redis_cache.lpush("all", new_sms.json())
     return new_sms
 
 
@@ -136,6 +146,7 @@ async def write_message(
 ):
     sms = message.message
     built_request = store_request_with_message(db=db, req=request, text=sms)
+    redis_cache.lpush("all", built_request.json())
     return built_request
 
 
