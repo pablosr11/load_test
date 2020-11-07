@@ -17,3 +17,15 @@
         - To improve: General profiling to see where we spend more time. Maybe ratelimit to avoid writes to take over the system?
     - Read/Write tests
         - peak at ~120rps.
+
+# Locally but with caching (caching greatly imporove reads 180->370 but at a cost in writes 140->70 (this can be due to added data serialization ebtween DB-Cache))
+    - Read tests
+        - peak at ~370rps
+        - 3k users timeouts but able to hold +300rps
+        - To improve: profile queries taking longer time. Cache efficiently.
+    - Write tests
+        - peak at ~70rps
+        - ~1.2k users with increasing response time but no errors from backend. Only timeouts on frontend
+        - To improve: Caching slow the writes down a lot. Profile see where we spend time.
+    - Read/Write
+        - peak at ~100rps
