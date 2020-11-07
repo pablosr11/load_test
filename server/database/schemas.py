@@ -9,14 +9,6 @@ class MethodEnum(str, Enum):
     GET = "GET"
     POST = "POST"
 
-
-class RequestBase(BaseModel):
-    origin_ip: str
-    origin_port: int = 0
-    endpoint: str = None
-    method: MethodEnum
-
-
 class RequestMessageIn(BaseModel):
     message: str
 
@@ -30,10 +22,19 @@ class RequestMessageOut(BaseModel):
         orm_mode = True
 
 
-class Request(RequestBase):
+class Request(BaseModel):
+    """Schema matching the DB model"""
+
     id: int
-    date_created: datetime
+    date_created: datetime = None
     message: str = None
+    origin_ip: str = None
+    origin_port: int = None
+    endpoint: str = None
+    method: MethodEnum = None
+    replies_to: int = None
+    phone: str = None
+    replies : List = None
 
     class Config:
         orm_mode = True
