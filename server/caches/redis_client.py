@@ -10,4 +10,4 @@ redis_cache = redis.StrictRedis(
 )
 cache_policy = {"lru": "allkeys-lru", "random": "allkeys-random"}
 redis_cache.config_set(name="maxmemory", value="200mb")
-redis_cache.config_set(name="maxmemory-policy", value=cache_policy["random"])
+redis_cache.config_set(name="maxmemory-policy", value=cache_policy["lru"])

@@ -14,9 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
-from server.caches.redis_client import redis_cache
-from server.database import crud, models, schemas
-from server.database.db import SessionLocal, engine
+from caches.redis_client import redis_cache
+from database import crud, models, schemas
+from database.db import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -61,7 +61,7 @@ def store_request_with_message(
 ) -> schemas.RequestMessageOut:
     built_request = generate_message(req)
     request_with_sms = crud.create_request(db=db, request=built_request, sms=text)
-    return schemas.RequestMessageOut(**request_with_sms.__dict__)
+    return schemas.RequestMessageOut.from_orm(request_with_sms)
 
 
 def store_reply(
@@ -71,7 +71,7 @@ def store_reply(
     request_with_sms = crud.create_reply(
         db=db, original_sms=og_message, request=built_request, request_sms=text
     )
-    return schemas.RequestMessageOut(**request_with_sms.__dict__)
+    return schemas.RequestMessageOut.from_orm(request_with_sms)
 
 
 @app.get("/api", response_model=Dict)
@@ -88,7 +88,20 @@ async def read_replies(
     db: Session = Depends(get_db),
 ):
     # background_tasks.add_task(store_request, db, request)
-    return crud.get_request(db=db, sms_id=sms_id)
+
+    # try to get from cache
+    if redis_cache.exists(sms_id):
+        return schemas.RequestWithReplies.parse_raw(redis_cache.get(sms_id))
+
+    # if not, query and store in cache
+    req = crud.get_request(db=db, sms_id=sms_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    if req.replies:
+        redis_cache.set(sms_id, schemas.RequestWithReplies.from_orm(req).json())
+        
+    return req
 
 
 @app.get(
@@ -105,12 +118,17 @@ async def read_messages(
     db: Session = Depends(get_db),
 ) -> List[schemas.Request]:
     # background_tasks.add_task(store_request, db, request)
-    if redis_cache.exists("all"):
+
+    #if we have enough entries in cache, return from cache
+    if (redis_cache.llen("all") > 100):
         return [
             schemas.RequestMessageOut.parse_raw(x)
             for x in redis_cache.lrange("all", skip, skip + limit)
         ]
+
+    # If less thatn required entries in cache, query db and add to cache
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
+    redis_cache.lpush("all", *[schemas.RequestMessageOut.from_orm(x).json() for x in requests])
     return requests
 
 
@@ -125,14 +143,24 @@ async def write_reploy(
     message: schemas.RequestMessageIn,
     db: Session = Depends(get_db),
 ):
-    original_sms = crud.get_request(db, sms_id)
 
-    if not original_sms:
-        raise HTTPException(status_code=404, detail="Message not found")
+    # Try to query this from cache - in such a way that we can store it in DB afterwards
+    if redis_cache.exists(sms_id):
+        original_sms = schemas.RequestWithReplies.parse_raw(redis_cache.get(sms_id))
+    else:
+        original_sms = crud.get_request(db, sms_id)
 
-    reply = message.message
-    new_sms = store_reply(db=db, req=request, text=reply, og_message=original_sms)
+        if not original_sms:
+            raise HTTPException(status_code=404, detail="Message not found")
+
+    new_sms = store_reply(db=db, req=request, text=message.message, og_message=original_sms)
+    
+    # Update general cache with new message
     redis_cache.lpush("all", new_sms.json())
+
+    # Delete original from cache as it has a new reply
+    redis_cache.delete(sms_id)
+
     return new_sms
 
 
@@ -146,6 +174,8 @@ async def write_message(
 ):
     sms = message.message
     built_request = store_request_with_message(db=db, req=request, text=sms)
+    
+    # Add new message to general cache
     redis_cache.lpush("all", built_request.json())
     return built_request
 
