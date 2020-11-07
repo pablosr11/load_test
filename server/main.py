@@ -42,36 +42,34 @@ def get_db():
         db.close()
 
 
-def generate_message(request: Request) -> schemas.RequestBase:
-    built_request = schemas.RequestBase(
-        origin_ip=request.client.host,
-        origin_port=request.client.port,
-        endpoint=request.url.path,
-        method=request.method,
+def parse_request(request: Request):
+    return {
+        "origin_ip": request.client.host,
+        "origin_port": request.client.port,
+        "endpoint": request.url.path,
+        "method": request.method,
+    }
+
+
+def store_request(
+    db: SessionLocal,
+    req: Request,
+    new_message: str = None,
+    replies_to: int = None,
+    phone: str = None,
+) -> schemas.Request:
+
+    """
+    Persist a message in the DB
+    Returns serialised ready for return/cache storage
+    """
+    new_object = models.Requests(
+        **parse_request(req), message=new_message, replies_to=replies_to
     )
-    return built_request
+    created_object = crud.create_message(db=db, message=new_object)
 
-
-def store_request(db: SessionLocal, req: Request) -> NoReturn:
-    crud.create_request(db, generate_message(req))
-
-
-def store_request_with_message(
-    db: SessionLocal, req: Request, text: str
-) -> schemas.RequestMessageOut:
-    built_request = generate_message(req)
-    request_with_sms = crud.create_request(db=db, request=built_request, sms=text)
-    return schemas.RequestMessageOut.from_orm(request_with_sms)
-
-
-def store_reply(
-    db: SessionLocal, req: Request, text: str, og_message: models.Requests
-) -> schemas.RequestMessageOut:
-    built_request = generate_message(req)
-    request_with_sms = crud.create_reply(
-        db=db, original_sms=og_message, request=built_request, request_sms=text
-    )
-    return schemas.RequestMessageOut.from_orm(request_with_sms)
+    ## This schema will contain replies, which are sqlalchemy models that are not serializble
+    return schemas.Request.from_orm(created_object)
 
 
 @app.get("/api", response_model=Dict)
@@ -119,8 +117,8 @@ async def read_messages(
 ) -> List[schemas.Request]:
     # background_tasks.add_task(store_request, db, request)
 
-    #if we have enough entries in cache, return from cache
-    if (redis_cache.llen("all") > 100):
+    # if we have enough entries in cache, return from cache
+    if redis_cache.llen("all") > 100:
         return [
             schemas.RequestMessageOut.parse_raw(x)
             for x in redis_cache.lrange("all", skip, skip + limit)
@@ -128,6 +126,8 @@ async def read_messages(
 
     # If less thatn required entries in cache, query db and add to cache
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
+
+    ## This breaks if the messages have replies. Currently working because none of the latest messages have
     redis_cache.lpush("all", *[schemas.RequestMessageOut.from_orm(x).json() for x in requests])
     return requests
 
@@ -144,17 +144,15 @@ async def write_reploy(
     db: Session = Depends(get_db),
 ):
 
-    # Try to query this from cache - in such a way that we can store it in DB afterwards
-    if redis_cache.exists(sms_id):
-        original_sms = schemas.RequestWithReplies.parse_raw(redis_cache.get(sms_id))
-    else:
+    # If its not in cache, try to find it in the DB
+    if not redis_cache.exists(sms_id):
         original_sms = crud.get_request(db, sms_id)
-
         if not original_sms:
             raise HTTPException(status_code=404, detail="Message not found")
 
-    new_sms = store_reply(db=db, req=request, text=message.message, og_message=original_sms)
-    
+    new_sms = store_request(
+        db=db, req=request, new_message=message.message, replies_to=sms_id
+    )
     # Update general cache with new message
     redis_cache.lpush("all", new_sms.json())
 
@@ -172,9 +170,7 @@ async def write_reploy(
 async def write_message(
     request: Request, message: schemas.RequestMessageIn, db: Session = Depends(get_db)
 ):
-    sms = message.message
-    built_request = store_request_with_message(db=db, req=request, text=sms)
-    
+    built_request = store_request(db=db, req=request, new_message=message.message)
     # Add new message to general cache
     redis_cache.lpush("all", built_request.json())
     return built_request
@@ -189,10 +185,7 @@ async def twilio_write(
     Body: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    phone_request = generate_message(request)
-    crud.create_request_from_phone(
-        db=db, phone_number=From, phone_message=Body, request=phone_request
-    )
+    store_request(db=db, req=request, new_message=Body, phone=From)
 
     # Twilio integration. Respond to messages
     # Some sec could be added here by checking the headers for a twilio signature against the origin url for a given account
