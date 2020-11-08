@@ -10,7 +10,7 @@ from . import models, schemas
 def add_commit_refresh(db, request):
     db.add(request)
     db.commit()
-    db.refresh(request)
+    db.refresh(request) # This will run an additional query
     return request
 
 

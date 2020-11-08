@@ -89,16 +89,14 @@ async def read_replies(
 
     # try to get from cache
     if redis_cache.exists(sms_id):
-        return schemas.RequestWithReplies.parse_raw(redis_cache.get(sms_id))
+        return schemas.Request.parse_raw(redis_cache.get(sms_id))
 
     # if not, query and store in cache
     req = crud.get_request(db=db, sms_id=sms_id)
     if not req:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    if req.replies:
-        redis_cache.set(sms_id, schemas.RequestWithReplies.from_orm(req).json())
-        
+    redis_cache.set(sms_id, schemas.Request.from_orm(req).json())
     return req
 
 
@@ -128,7 +126,7 @@ async def read_messages(
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
 
     ## This breaks if the messages have replies. Currently working because none of the latest messages have
-    redis_cache.lpush("all", *[schemas.RequestMessageOut.from_orm(x).json() for x in requests])
+    redis_cache.lpush("all", *[schemas.Request.from_orm(x).json() for x in requests])
     return requests
 
 

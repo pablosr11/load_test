@@ -21,25 +21,6 @@ class RequestMessageOut(BaseModel):
     class Config:
         orm_mode = True
 
-
-class Request(BaseModel):
-    """Schema matching the DB model"""
-
-    id: int
-    date_created: datetime = None
-    message: str = None
-    origin_ip: str = None
-    origin_port: int = None
-    endpoint: str = None
-    method: MethodEnum = None
-    replies_to: int = None
-    phone: str = None
-    replies : List = None
-
-    class Config:
-        orm_mode = True
-
-
 class RequestWithMessage(BaseModel):
     id: int
     message: str
@@ -55,3 +36,23 @@ class RequestWithReplies(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class Request(BaseModel):
+    """Schema matching the DB model"""
+
+    id: int
+    date_created: datetime = None
+    message: str = None
+    origin_ip: str = None
+    origin_port: int = None
+    endpoint: str = None
+    method: MethodEnum = None
+    replies_to: int = None
+    phone: str = None
+    replies : List[RequestWithMessage] = None
+
+    class Config:
+        orm_mode = True
+
+
