@@ -24,8 +24,8 @@
         - 3k users timeouts but able to hold +300rps
         - To improve: profile queries taking longer time. Cache efficiently.
     - Write tests
-        - peak at ~70rps
+        - peak at ~65rps
         - ~1.2k users with increasing response time but no errors from backend. Only timeouts on frontend
         - To improve: Caching slow the writes down a lot. Profile see where we spend time.
     - Read/Write
-        - peak at ~100rps
+        - peak at ~90rps

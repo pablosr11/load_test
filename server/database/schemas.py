@@ -50,7 +50,7 @@ class Request(BaseModel):
     method: MethodEnum = None
     replies_to: int = None
     phone: str = None
-    replies : List[RequestWithMessage] = None
+    replies : List[RequestWithMessage] = []
 
     class Config:
         orm_mode = True

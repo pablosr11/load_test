@@ -22,6 +22,40 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+## queries profiling
+# import sqltap
+# @app.middleware("http")
+# async def add_sql_tap(request: Request, call_next):
+#     profiler = sqltap.start()
+#     response = await call_next(request)
+#     statistics = profiler.collect()
+#     sqltap.report(statistics, "report.txt", report_format="text")
+#     return response
+
+# import yappi
+# import sqlalchemy
+# import fastapi
+# @app.middleware("http")
+# async def yappi_metrics(request: Request, call_next):
+#     yappi.set_clock_type("wall")
+#     yappi.start()
+#     response = await call_next(request)
+#     yappi.stop()
+#     # endpoint_func = yappi.get_func_stats(filter_callback=lambda x: fastapi.routing.run_endpoint_function)
+#     # deps = yappi.get_func_stats(filter_callback=lambda x: fastapi.routing.solve_dependencies)
+#     # db_exec_time = yappi.get_func_stats(filter_callback=lambda x: sqlalchemy.engine.base.Engine.execute.__qualname__)
+#     # db_fetch_time = yappi.get_func_stats(filter_callback=lambda x: (
+# 	# 	sqlalchemy.engine.ResultProxy.fetchone,
+# 	# 	sqlalchemy.engine.ResultProxy.fetchmany,
+# 	# 	sqlalchemy.engine.ResultProxy.fetchall,
+# 	# ))
+#     # pydantic_time = yappi.get_func_stats(filter_callback=lambda x: fastapi.routing.serialize_response.__qualname__)
+#     # render_time = yappi.get_func_stats(filter_callback=lambda x: response.render.__qualname__)
+
+#     yappi.get_func_stats().sort('ttot', sort_order="desc").print_all() # All time
+#     return response
+
+
 origins = [
     "*",  # to be modified for added security once we have static urls/other way of adding known origins
 ]
@@ -69,7 +103,7 @@ def store_request(
     created_object = crud.create_message(db=db, message=new_object)
 
     ## This schema will contain replies, which are sqlalchemy models that are not serializble
-    return schemas.Request.from_orm(created_object)
+    return schemas.Request(**created_object.__dict__)
 
 
 @app.get("/api", response_model=Dict)
@@ -96,8 +130,10 @@ async def read_replies(
     if not req:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    redis_cache.set(sms_id, schemas.Request.from_orm(req).json())
-    return req
+    serialised = schemas.Request.from_orm(req)
+
+    redis_cache.set(sms_id, serialised.json())
+    return serialised
 
 
 @app.get(
@@ -110,13 +146,13 @@ async def read_messages(
     background_tasks: BackgroundTasks,
     date: Optional[datetime] = datetime.now() - timedelta(30),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 50,
     db: Session = Depends(get_db),
 ) -> List[schemas.Request]:
     # background_tasks.add_task(store_request, db, request)
 
     # if we have enough entries in cache, return from cache
-    if redis_cache.llen("all") > 100:
+    if redis_cache.llen("all") >= limit:
         return [
             schemas.RequestMessageOut.parse_raw(x)
             for x in redis_cache.lrange("all", skip, skip + limit)
@@ -125,8 +161,8 @@ async def read_messages(
     # If less thatn required entries in cache, query db and add to cache
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
 
-    ## This breaks if the messages have replies. Currently working because none of the latest messages have
-    redis_cache.lpush("all", *[schemas.Request.from_orm(x).json() for x in requests])
+    # Could we fix id we pull the tables on query .options(joinedload(models.Requests.replies))
+    redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
     return requests
 
 
@@ -147,6 +183,7 @@ async def write_reploy(
         original_sms = crud.get_request(db, sms_id)
         if not original_sms:
             raise HTTPException(status_code=404, detail="Message not found")
+        redis_cache.set(sms_id, schemas.Request.from_orm(original_sms).json())
 
     new_sms = store_request(
         db=db, req=request, new_message=message.message, replies_to=sms_id
@@ -154,8 +191,12 @@ async def write_reploy(
     # Update general cache with new message
     redis_cache.lpush("all", new_sms.json())
 
-    # Delete original from cache as it has a new reply
-    redis_cache.delete(sms_id)
+    # Set expiration date on key to refresh it from DB. That way we
+    # will fetch the new replies after some seconds. This will save
+    # queries if we keep titting this endpoint and also regresh from
+    # db after N time.
+    if redis_cache.ttl(sms_id) == -1:
+        redis_cache.expire(name=sms_id, time=20)
 
     return new_sms
 
