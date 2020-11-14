@@ -2,12 +2,8 @@
 [backend]
 35.176.18.102
 
-[frontend]
-18.132.195.219
-
 [prod:children]
 backend
-frontend
 
 [prod:vars]
 ansible_python_interpreter=/usr/bin/python3
@@ -23,7 +19,4 @@ backend_image="pablosr11/loadtest-backend"
 backend_tag="latest"
 backend_exposed_port="8000:8000"
 
-[frontend:vars]
-frontend_image="pablosr11/loadtest-frontend"
-frontend_exposed_port="80:80"
-frontend_tag="latest"
+

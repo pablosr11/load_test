@@ -9,11 +9,11 @@
     - 4 cores. 6gb RAM. Postgres and Gunicorn sharing them
     - Read tests
         - peat at ~180rps
-        - +2k users with increasing response time but no errors from backend. Only timeouts on frontend.
+        - +2k users with increasing response time but no errors from backend. Only timeouts on client.
         - To improve: profile what queries seem to be taken most time and cache them. (REDIS)
     - Write tests
         - peat at ~140rps
-        - ~1.2k users with increasing response time but no errors from backend. Only timeouts on frontend
+        - ~1.2k users with increasing response time but no errors from backend. Only timeouts on client
         - To improve: General profiling to see where we spend more time. Maybe ratelimit to avoid writes to take over the system?
     - Read/Write tests
         - peak at ~120rps.
@@ -25,7 +25,7 @@
         - To improve: profile queries taking longer time. Cache efficiently.
     - Write tests
         - peak at ~65rps
-        - ~1.2k users with increasing response time but no errors from backend. Only timeouts on frontend
+        - ~1.2k users with increasing response time but no errors from backend. Only timeouts on client
         - To improve: Caching slow the writes down a lot. Profile see where we spend time.
     - Read/Write
         - peak at ~90rps

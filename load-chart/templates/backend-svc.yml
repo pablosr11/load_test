@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend
+  # labels:
+  #   app: backend
 spec:
   selector:
     app: api
@@ -9,3 +11,4 @@ spec:
     - protocol: TCP
       port: 8000
       targetPort: 8000
+  type: LoadBalancer

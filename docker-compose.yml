@@ -27,14 +27,6 @@ services:
       - db
       - redis
 
-  front:
-    container_name: front
-    image: pablosr11/loadtest-frontend:k8
-    ports:
-      - 80:80
-    depends_on:
-      - backend
-
   redis:
     container_name: redis
     image: redis:6.0

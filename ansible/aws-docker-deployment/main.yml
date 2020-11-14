@@ -102,33 +102,3 @@
           POSTGRES_SERVER: "{{ db_server }}"
           POSTGRES_PORT: "{{ db_port }}"
           POSTGRES_DB: "{{ db_name }}"
-
-- name: FRONTEND DEPLOYMENT
-  gather_facts: no
-  hosts: frontend
-  remote_user: ubuntu
-
-  tasks:
-    ### Check required variables
-    - name: Check required variables are defined correctly
-      assert:
-        that:
-          - vars[item] is defined and vars[item] != ""
-        quiet: yes
-      with_items:   
-        - frontend_image
-        - frontend_tag
-        - frontend_exposed_port
-
-    ###
-    ### APP DEPLOYMENT
-    ###
-    - name: Deploy frontend
-      become: yes
-      docker_container:
-        name: front
-        container_default_behavior: compatibility
-        pull: yes # to pick up new image
-        image: "{{ frontend_image }}:{{ frontend_tag }}"
-        ports:
-          - "{{ frontend_exposed_port }}"
