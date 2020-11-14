@@ -18,7 +18,12 @@ from caches.redis_client import redis_cache
 from database import crud, models, schemas
 from database.db import SessionLocal, engine
 
-models.Base.metadata.create_all(bind=engine)
+try:
+    models.Base.metadata.create_all(bind=engine)
+    print("YES DB")
+except Exception as exc:
+    print("NO DB")
+    raise exc
 
 app = FastAPI()
 
@@ -162,6 +167,7 @@ async def read_messages(
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
 
     # Could we fix id we pull the tables on query .options(joinedload(models.Requests.replies))
+    # this might on empty queryset
     redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
     return requests
 

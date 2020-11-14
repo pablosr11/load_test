@@ -24,7 +24,7 @@ spec:
             - name: POSTGRES_PASSWORD
               value: "postgres"
             - name: POSTGRES_SERVER
-              value: "postgres-service"
+              value: "db"
             - name: POSTGRES_PORT
               value: "5432"
             - name: POSTGRES_DB

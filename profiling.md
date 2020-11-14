@@ -29,3 +29,9 @@
         - To improve: Caching slow the writes down a lot. Profile see where we spend time.
     - Read/Write
         - peak at ~90rps
+
+# first k8 run on gcloud. bigger machine
+    - Write. Peak at 130rps. 200 concurrent writes is where responses started to be delayed.
+    - Read/write. Peak 180 rps. 300 concurrent users starts to delay responses.
+    - read. Peak at 390. 550 concurrent starts delay
+
