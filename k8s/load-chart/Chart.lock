@@ -1,0 +1,12 @@
+dependencies:
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 11.1.3
+- name: db-chart
+  repository: file://../db-chart
+  version: 0.1.0
+- name: redis-chart
+  repository: file://../redis-chart
+  version: 0.1.0
+digest: sha256:030ba6d38c0f4b1c4fe7c360cebcbc6f5dc71337abccc31d6f7660f4369d317f
+generated: "2020-11-15T17:57:15.363471Z"
