@@ -8,6 +8,7 @@ WORKDIR /app
 ADD . /app
 
 RUN chmod +x startup.sh
+RUN chmod +x startup-reload.sh
 
 EXPOSE 8000
 

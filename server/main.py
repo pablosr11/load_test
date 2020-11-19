@@ -20,9 +20,8 @@ from database.db import SessionLocal, engine
 
 try:
     models.Base.metadata.create_all(bind=engine)
-    print("YES DB")
 except Exception as exc:
-    print("NO DB")
+    print("err connecting with the DB")
     raise exc
 
 app = FastAPI()
