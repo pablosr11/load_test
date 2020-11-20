@@ -7,7 +7,7 @@ backend
 
 [prod:vars]
 ansible_python_interpreter=/usr/bin/python3
-ansible_ssh_private_key_file=/Users/pablo.sanderson/repos/z-pablo/backend_load/tf-key
+ansible_ssh_private_key_file=
 
 [backend:vars]
 db_server="db-test.crzpxav9jfak.eu-west-2.rds.amazonaws.com"
@@ -16,7 +16,7 @@ db_user="postgres"
 db_pass=""
 db_port="5432"
 backend_image="pablosr11/loadtest-backend"
-backend_tag="latest"
+backend_tag="k8"
 backend_exposed_port="8000:8000"
 
 
