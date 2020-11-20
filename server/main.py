@@ -167,7 +167,8 @@ async def read_messages(
 
     # Could we fix id we pull the tables on query .options(joinedload(models.Requests.replies))
     # this might on empty queryset
-    redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
+    if requests:
+        redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
     return requests
 
 
