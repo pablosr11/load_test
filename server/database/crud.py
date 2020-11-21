@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 
-from . import models
+from server.database.models import Requests
 
 
 def add_commit_refresh(db, request):
@@ -14,12 +14,8 @@ def add_commit_refresh(db, request):
     return request
 
 
-def get_request(db: Session, sms_id: int) -> Optional[models.Requests]:
-    return (
-        db.query(models.Requests)
-        .options(joinedload(models.Requests.replies))
-        .get(sms_id)
-    )
+def get_request(db: Session, sms_id: int) -> Optional[Requests]:
+    return db.query(Requests).options(joinedload(Requests.replies)).get(sms_id)
 
 
 def get_requests(
@@ -27,19 +23,19 @@ def get_requests(
     date: datetime = datetime.now() - timedelta(30),
     skip: int = 0,
     limit: int = 50,
-) -> List[models.Requests]:
+) -> List[Requests]:
     return (
-        db.query(models.Requests)
-        .filter(models.Requests.date_created > date)
-        .order_by(desc(models.Requests.id))
+        db.query(Requests)
+        .filter(Requests.date_created > date)
+        .order_by(desc(Requests.id))
         .offset(skip)
         .limit(limit)
-        .options(joinedload(models.Requests.replies))
+        .options(joinedload(Requests.replies))
         .all()
     )
 
 
-def create_message(db: Session, message: models.Requests) -> models.Requests:
+def create_message(db: Session, message: Requests) -> Requests:
     """
     Given a DB session and a SQLAlchemy model, store it in Database.
     """
