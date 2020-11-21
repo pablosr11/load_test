@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
@@ -80,8 +80,7 @@ async def read_replies(
     response_model_exclude_none=True,
 )
 async def read_messages(
-    date: Optional[datetime] = datetime.now()
-    - timedelta(30),  # remove default date - this will be calculated on init
+    date: Optional[datetime] = None,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),

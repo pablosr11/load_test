@@ -20,10 +20,12 @@ def get_request(db: Session, sms_id: int) -> Optional[Requests]:
 
 def get_requests(
     db: Session,
-    date: datetime = datetime.now() - timedelta(30),
+    date: datetime = None,
     skip: int = 0,
     limit: int = 50,
 ) -> List[Requests]:
+    if not date:
+        date = datetime.now() - timedelta(30)
     return (
         db.query(Requests)
         .filter(Requests.date_created > date)
