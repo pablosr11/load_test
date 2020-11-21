@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, NoReturn, Optional
+from typing import Dict, List, Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -14,15 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
-from caches.redis_client import redis_cache
-from database import crud, models, schemas
-from database.db import SessionLocal, engine
-
-try:
-    models.Base.metadata.create_all(bind=engine)
-except Exception as exc:
-    print("err connecting with the DB")
-    raise exc
+from .caches.redis_client import redis_cache
+from .database import crud, models, schemas
+from .database.db import SessionLocal
 
 app = FastAPI()
 
@@ -165,10 +159,11 @@ async def read_messages(
     # If less thatn required entries in cache, query db and add to cache
     requests = crud.get_requests(db, skip=skip, limit=limit, date=date)
 
-    # Could we fix id we pull the tables on query .options(joinedload(models.Requests.replies))
-    # this might on empty queryset
-    if requests:
-        redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
+    # Exit if no requests available
+    if not requests:
+        return requests
+
+    redis_cache.lpush("all", *[schemas.Request(**x.__dict__).json() for x in requests])
     return requests
 
 

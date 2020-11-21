@@ -1,0 +1,35 @@
+repos:
+  - repo: local
+    hooks:
+      - id: autoflake
+        name: autoflake
+        stages: [commit]
+        language: system
+        entry: autoflake
+        args: 
+          - "--in-place"
+          - "--remove-all-unused-imports"
+          - "--remove-unused-variables"
+          - "--ignore-init-module-imports"
+        types: [python]
+
+      - id: isort
+        name: isort
+        stages: [commit]
+        language: system
+        entry: isort
+        args: 
+          - "--line-width"
+          - "88"
+          - "--multi-line"
+          - "3"
+          - "--trailing-comma"
+          - "--use-parentheses"
+        types: [python]
+
+      - id: black
+        name: black
+        stages: [commit]
+        language: system
+        entry: black
+        types: [python]
