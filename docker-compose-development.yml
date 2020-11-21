@@ -23,9 +23,9 @@ services:
       context: ./server
       dockerfile: Dockerfile
     # command: bash -c "while true; do sleep 1; done"
-    command: /bin/sh /app/startup-reload.sh
+    command: /bin/sh /server/startup-reload.sh
     volumes: 
-      - ./server:/app
+      - ./server:/server
     ports:
       - 8000:8000
     environment:

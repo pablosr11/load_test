@@ -14,9 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from twilio.twiml.messaging_response import MessagingResponse
 
-from .caches.redis_client import redis_cache
-from .database import crud, models, schemas
-from .database.db import SessionLocal
+from server.caches.redis_client import redis_cache
+from server.database import crud, models, schemas
+from server.database.db import SessionLocal
 
 app = FastAPI()
 
