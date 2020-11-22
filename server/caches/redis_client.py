@@ -18,6 +18,3 @@ def get_redis_client():
         name="maxmemory-policy", value=REDIS_CACHE_POLICIES.get("lru", "random")
     )
     return rc
-
-
-redis_cache = get_redis_client()

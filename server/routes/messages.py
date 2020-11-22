@@ -4,11 +4,12 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
-from server.caches.redis_client import redis_cache
+from server.caches.redis_client import get_redis_client
 from server.database import crud, models, schemas
 from server.database.db import SessionLocal
 
 msg_router = APIRouter()
+redis_cache = get_redis_client()
 
 # Dependency
 def get_db():
