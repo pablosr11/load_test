@@ -52,7 +52,7 @@ def store_request(
 
 @msg_router.get("/hello", response_model=Dict)
 async def read_root():
-    return {"Hello": "This is welcome page"}
+    return {"Hello": "This is an updated welcome page"}
 
 
 @msg_router.get("/{sms_id}", response_model=schemas.RequestWithReplies)
