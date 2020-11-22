@@ -50,10 +50,10 @@ jobs:
       - name: Build image
         run: docker build server --file server/Dockerfile --tag $IMAGE_NAME
 
-      - name: Log into registry
+      - name: Log into Github Repository
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
-      - name: Push image
+      - name: Push image to Github 
         run: |
           IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
 
@@ -74,3 +74,29 @@ jobs:
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
+      
+      - name: Log into Dockerhub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login https://index.docker.io/v1/ -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      
+      - name: Push image to Dockerhub 
+        run: |
+          IMAGE_ID=${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+
