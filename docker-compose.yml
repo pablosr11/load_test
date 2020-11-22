@@ -14,7 +14,7 @@ services:
 
   backend:
     container_name: backend
-    image: pablosr11/loadtest-backend:k8
+    image: pablosr11/loadtest_api
     env_file: .env
     ports:
       - 8000:8000

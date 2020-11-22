@@ -15,7 +15,7 @@ db_name="loadtest"
 db_user="postgres"
 db_pass=""
 db_port="5432"
-backend_image="pablosr11/loadtest-backend"
+backend_image="pablosr11/loadtest_api"
 backend_tag="k8"
 backend_exposed_port="8000:8000"
 
