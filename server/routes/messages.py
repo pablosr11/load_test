@@ -109,6 +109,7 @@ async def read_messages(
     "/{sms_id}",
     response_model=schemas.RequestMessageOut,
     response_model_exclude_none=True,
+    status_code=201,
 )
 async def write_reploy(
     sms_id: int,
@@ -144,6 +145,7 @@ async def write_reploy(
     "/",
     response_model=schemas.RequestMessageOut,
     response_model_exclude_none=True,
+    status_code=201,
 )
 async def write_message(
     request: Request, message: schemas.RequestMessageIn, db: Session = Depends(get_db)
