@@ -31,6 +31,8 @@ jobs:
           if [ -f server/docker-compose.test.yml ]; then
             docker-compose --file server/docker-compose.test.yml build
             docker-compose --file server/docker-compose.test.yml run sut
+            # stop the build if there are Python syntax errors or undefined names
+            docker-compose --file server/docker-compose.test.yml run sut bash -c "flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics"
           else
             docker build server --file server/Dockerfile
           fi

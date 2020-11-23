@@ -123,7 +123,7 @@ async def write_reploy(
         original_sms = crud.get_request(db, sms_id)
         if not original_sms:
             raise HTTPException(status_code=404, detail="Message not found")
-        redis_cache.set(sms_id, schemas.Request.from_orm(original_sms).json())
+        # redis_cache.set(sms_id, schemas.Request.from_orm(original_sms).json())
 
     new_sms = store_request(
         db=db, req=request, new_message=message.message, replies_to=sms_id

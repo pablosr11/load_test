@@ -14,12 +14,14 @@ cfgv==3.2.0
 chardet==3.0.4
 click==7.1.2
 ConfigArgParse==1.2.3
+coverage==5.3
 cryptography==3.1.1
 decorator==4.4.2
 distlib==0.3.1
 fakeredis==1.4.4
 fastapi==0.61.1
 filelock==3.0.12
+flake8==3.8.4
 Flask==1.1.2
 Flask-BasicAuth==0.2.0
 gevent==20.9.0
@@ -60,6 +62,7 @@ psutil==5.7.2
 psycopg2==2.8.6
 ptyprocess==0.6.0
 py==1.9.0
+pycodestyle==2.6.0
 pycparser==2.20
 pydantic==1.6.1
 pyflakes==2.2.0
@@ -68,6 +71,7 @@ PyJWT==1.7.1
 pylint==2.6.0
 pyparsing==2.4.7
 pytest==6.1.2
+pytest-cov==2.10.1
 python-dateutil==2.8.1
 python-editor==1.0.4
 python-multipart==0.0.5
