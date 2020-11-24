@@ -34,24 +34,9 @@ jobs:
             # stop the build if there are Python syntax errors or undefined names
             docker-compose --file server/docker-compose.test.yml run sut bash -c "flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics"
           else
-            docker build server --file server/Dockerfile
+            docker build server --file server/Dockerfile --tag $IMAGE_NAME
           fi
-
-  # Push image to GitHub Packages.
-  # See also https://docs.docker.com/docker-hub/builds/
-  push:
-    # Ensure test job passes before pushing image.
-    needs: test
-
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Build image
-        run: docker build server --file server/Dockerfile --tag $IMAGE_NAME
-
+      
       - name: Log into Github Repository
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
@@ -76,6 +61,37 @@ jobs:
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
+
+  # Push image to GitHub Packages.
+  # See also https://docs.docker.com/docker-hub/builds/
+  push:
+    # Ensure test job passes before pushing image.
+    needs: test
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log into Github Repository
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Pull same image from Github artifact repository
+        run: |
+          # Ideally we should share the image between jobs locally, not pull and push as we might get a diff image
+          # as soon as more than 1 process is uploading/downloading
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          
+          # Pull the image and tag it with the original tag so we overwrite it with the new tag
+          docker pull $IMAGE_ID:$VERSION
+          docker tag $IMAGE_ID:$VERSION $IMAGE_NAME
       
       - name: Log into Dockerhub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login https://index.docker.io/v1/ -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
