@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   sut:
+    image: loadtest_api
     build: .
     command: pytest
     depends_on:
