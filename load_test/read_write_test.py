@@ -9,7 +9,7 @@ class QuickstartUser(HttpUser):
 
     @task
     def index_page(self):
-        self.client.get("/api")
+        self.client.get("/api/sms/hello")
 
     @task
     def view_messages_with_replies(self):
@@ -43,4 +43,6 @@ class QuickstartUser(HttpUser):
         # generate random string
         payload = "".join([choice(ascii_lowercase) for _ in range(5)])
 
-        self.client.post(f"/api/sms/{rnd}", json={"message": payload}, name="/detail-sms")
+        self.client.post(
+            f"/api/sms/{rnd}", json={"message": payload}, name="/detail-sms"
+        )
