@@ -9,28 +9,13 @@ env:
   GKE_CLUSTER_NAME: learn-k8s-in-gke-gke
   GKE_CLUSTER_REGION: europe-west2-b
   HELM_RELEASE_NAME: test
+  IMAGE_NAME: loadtest_api
 
 jobs:
-
-  ## this should only run after a change is merged (so has passed tests etc)
-  debug:
-    runs-on: ubuntu-latest
-    if: github.event.client_payload
-    steps:
-      # RUN TESTS ETC
-      - name: received the deployment?
-        run: echo ${{ github.event.client_payload.unit }}
-      
-      - run: echo ${{ github.event.client_payload.ref }} 
-      - run: echo ${{ github.event.client_payload.sha }} 
-      - run: echo ${{ github.event_name }} 
-      
-      - run: exit 1
-
+  ## this is triggered with github repo dispatches, at the end of the test and publish workflow
   deployment:
 
     runs-on: ubuntu-latest
-    needs: debug # remove
 
     steps:
       - uses: actions/checkout@v2
@@ -50,6 +35,24 @@ jobs:
       # Deploy the Docker image to the GKE cluster
       - name: Deploy
         run: |
+          IMAGE_ID=${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.event.client_payload.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.event.client_payload.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
           gcloud container clusters get-credentials $GKE_CLUSTER_NAME \
             --region $GKE_CLUSTER_REGION
-          helm upgrade --install $HELM_RELEASE_NAME k8s/load-chart
+          helm upgrade --install $HELM_RELEASE_NAME k8s/load-chart --set image.tag=$VERSION \
+            --set image.name=$IMAGE_ID

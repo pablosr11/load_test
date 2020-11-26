@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: pablosr11/loadtest_api
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
           imagePullPolicy: Always
           env:
             - name: POSTGRES_USER

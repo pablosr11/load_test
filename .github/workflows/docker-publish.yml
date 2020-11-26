@@ -99,4 +99,3 @@ jobs:
             -H 'Authorization: ${{ secrets.GH_API_TOKEN }}' \
             -d '{"event_type" : "deployment", "client_payload": {"ref":"${{ github.ref }}","sha": "${{ github.sha }}"}}'
 
-      - run: exit 1
